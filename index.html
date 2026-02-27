@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academy Manager | Gestão de Docentes</title>
+    <title>Academy Manager | UniFECAF</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -23,7 +23,14 @@
 
     <style>
         body { background-color: #050505; background-image: linear-gradient(rgba(0, 243, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.02) 1px, transparent 1px); background-size: 40px 40px; padding-bottom: 60px; }
-        .text-gradient { background: linear-gradient(90deg, #fff, #00f3ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* Título com Gradiente Azul para Azul Escuro */
+        .text-gradient {
+            background: linear-gradient(90deg, #00f3ff, #003366);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
         ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: #111; } ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; } ::-webkit-scrollbar-thumb:hover { background: #00f3ff; }
         
         .status-select { -webkit-appearance: none; appearance: none; background-color: #000000; border: 2px solid #333; padding: 8px; border-radius: 6px; color: #fff; text-align: center; font-size: 11px; font-weight: 700; width: 100%; cursor: pointer; transition: all 0.2s; }
@@ -158,14 +165,16 @@
             <span class="hidden md:block">Academy Manager v1.2</span>
             <div class="flex items-center gap-3">
                 <span>Atualizado por:</span>
+                <!-- Ordem alterada: Luis, Osvaldo, Alex -->
                 <select id="authorSelect" class="bg-dark border border-border rounded px-2 py-1 text-white focus:outline-none">
-                    <option value="Osvaldo">Osvaldo</option>
                     <option value="Luis">Luis</option>
+                    <option value="Osvaldo">Osvaldo</option>
                     <option value="Alex">Alex</option>
                 </select>
                 <span id="footerTimestamp" class="text-gray-600 font-mono"></span>
             </div>
-            <span class="hidden md:block opacity-50">Sistema Interno</span>
+            <!-- Texto alterado -->
+            <span class="hidden md:block opacity-50">Núcleo de Engenharias e Tecnologias - UniFECAF</span>
         </div>
     </footer>
 
@@ -178,7 +187,7 @@
     </div>
 
     <script>
-        // --- CONFIGURAÇÃO SUPABASE ---
+        // --- CONFIGURAÇÃO SUPABASE (JÁ PREENCHIDA) ---
         const SUPABASE_URL = 'https://kzpnxhmcqmmhmtstejny.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6cG54aG1jcW1taG10c3Rlam55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMDkzOTAsImV4cCI6MjA4Nzc4NTM5MH0.0gXfc59fY-oWM3SgBEtvMNiOiZKiIkj1sqgFkb3RP3I';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -300,6 +309,7 @@
             if(err2) { alert("Erro ao salvar grade"); return; }
 
             alert("Salvo com sucesso!");
+            updateFooterTimestamp(); // Atualiza rodapé visual
             resetForm();
             await loadFromSupabase();
         }
@@ -356,7 +366,7 @@
 
             if(err1) { alert("Erro ao atualizar"); return; }
 
-            // Atualiza Grade (Deleta antiga, cria nova)
+            // Atualiza Grade
             await _supabase.from('disponibilidade').delete().match({ professor_id: id });
             const { error: err2 } = await _supabase
                 .from('disponibilidade')
@@ -365,6 +375,7 @@
             if(err2) { alert("Erro ao atualizar grade"); return; }
 
             alert("Atualizado!");
+            updateFooterTimestamp(); // Atualiza rodapé visual
             resetForm();
             await loadFromSupabase();
         }
@@ -415,6 +426,15 @@
             });
         }
 
+        // Atualiza o texto visual do rodapé
+        function updateFooterTimestamp() {
+            const now = new Date().toLocaleString('pt-BR');
+            const el = document.getElementById('footerTimestamp');
+            el.innerText = now;
+            el.classList.add('text-accent');
+            setTimeout(() => el.classList.remove('text-accent'), 3000);
+        }
+
         // --- LISTA E EVENTOS ---
         function renderList() {
             const list = document.getElementById('professorList');
@@ -451,7 +471,7 @@
                         ${tagsHtml}
                     </div>
                     <div class="border-t border-border pt-3 flex justify-between items-center text-[10px] text-gray-600">
-                        <span>Por: ${p.author || 'N/A'}</span>
+                        <span>Por: ${p.author || 'N/A'} em ${p.updatedAt || 'N/A'}</span>
                         <div class="flex gap-2">
                             <button class="btn-report text-accent hover:underline">Ver Grade</button>
                             <button class="btn-delete text-red-500 hover:underline">Excluir</button>
@@ -483,7 +503,6 @@
             
             cards.forEach(card => {
                 const name = card.querySelector('h3').innerText.toLowerCase();
-                // Busca também no email e telefone que estão dentro do card
                 const details = card.innerText.toLowerCase(); 
                 
                 if(name.includes(term) || details.includes(term)) {
