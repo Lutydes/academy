@@ -57,9 +57,8 @@
                 <h1 class="text-2xl font-bold text-gradient tracking-tight">Academy Manager</h1>
             </div>
             
-            <!-- Campo de Busca Funcional -->
             <div class="relative w-full md:w-96">
-                <input type="text" id="searchInput" onkeyup="filterProfessors()" placeholder="Digite para buscar..." 
+                <input type="text" id="searchInput" onkeyup="filterProfessors()" placeholder="Buscar professor, email ou disciplina..." 
                     class="w-full bg-card border border-border rounded pl-10 pr-4 py-2 text-sm focus:border-accent focus:outline-none">
                 <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
@@ -78,7 +77,8 @@
                 <button id="btnCancelEdit" onclick="resetForm()" class="hidden text-xs text-gray-500 hover:text-red-500 underline">Cancelar Edição</button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+            <!-- Linha 1: Dados Pessoais -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
                 <input type="hidden" id="editId">
                 
                 <div class="md:col-span-4">
@@ -95,7 +95,20 @@
                     </select>
                 </div>
 
-                <div class="md:col-span-4">
+                <div class="md:col-span-3">
+                    <label class="block text-xs text-gray-500 mb-1 uppercase tracking-wider">E-mail</label>
+                    <input type="email" id="profEmail" class="w-full bg-dark border border-border rounded px-3 py-2.5 text-white focus:border-accent focus:outline-none" placeholder="email@exemplo.com">
+                </div>
+
+                <div class="md:col-span-3">
+                    <label class="block text-xs text-gray-500 mb-1 uppercase tracking-wider">Telefone</label>
+                    <input type="tel" id="profPhone" class="w-full bg-dark border border-border rounded px-3 py-2.5 text-white focus:border-accent focus:outline-none" placeholder="(00) 00000-0000">
+                </div>
+            </div>
+
+            <!-- Linha 2: Tags e Botões -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+                <div class="md:col-span-8">
                     <label class="block text-xs text-gray-500 mb-1 uppercase tracking-wider">Disciplinas (Tags)</label>
                     <div class="flex gap-2">
                         <input type="text" id="tagInput" class="flex-1 bg-dark border border-border rounded px-3 py-2.5 text-white focus:border-accent focus:outline-none" placeholder="Digite e aperte Enter">
@@ -104,7 +117,7 @@
                     <div id="tagsContainer" class="flex flex-wrap gap-1 mt-2"></div>
                 </div>
 
-                <div class="md:col-span-2 flex items-end gap-2">
+                <div class="md:col-span-4 flex items-end gap-2">
                     <button id="btnSave" onclick="saveProfessor()" class="flex-1 bg-accent text-black font-bold py-2.5 rounded hover:bg-opacity-80 transition text-sm">Salvar</button>
                     <button id="btnUpdate" onclick="updateProfessor()" class="hidden flex-1 bg-green-500 text-black font-bold py-2.5 rounded hover:bg-opacity-80 transition text-sm">Atualizar</button>
                 </div>
@@ -142,12 +155,12 @@
     <!-- RODAPÉ -->
     <footer class="footer-bar py-2 px-6">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
-            <span class="hidden md:block">Academy Manager v1.1</span>
+            <span class="hidden md:block">Academy Manager v1.2</span>
             <div class="flex items-center gap-3">
                 <span>Atualizado por:</span>
                 <select id="authorSelect" class="bg-dark border border-border rounded px-2 py-1 text-white focus:outline-none">
-                    <option value="Luis">Luis</option>
                     <option value="Osvaldo">Osvaldo</option>
+                    <option value="Luis">Luis</option>
                     <option value="Alex">Alex</option>
                 </select>
                 <span id="footerTimestamp" class="text-gray-600 font-mono"></span>
@@ -156,7 +169,7 @@
         </div>
     </footer>
 
-    <!-- MODAL RELATÓRIO INDIVIDUAL -->
+    <!-- MODAL RELATÓRIO -->
     <div id="reportModal" class="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 hidden overflow-y-auto p-4 flex justify-center items-start pt-10">
         <div class="bg-card border border-border rounded-xl max-w-3xl w-full p-6 relative animate-in">
             <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white text-2xl">&times;</button>
@@ -182,7 +195,6 @@
             renderTable();
             await loadFromSupabase();
             
-            // Configura eventos
             document.getElementById('tagInput').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') { e.preventDefault(); addTag(); }
             });
@@ -243,7 +255,7 @@
         async function loadFromSupabase() {
             const { data, error } = await _supabase
                 .from('professores')
-                .select('id, nome, titulacao, tags, author, updated_at, disponibilidade(grade)');
+                .select('id, nome, titulacao, tags, author, updated_at, email, telefone, disponibilidade(grade)');
 
             if (error) { console.error(error); return; }
             
@@ -253,6 +265,8 @@
                 titulacao: p.titulacao,
                 tags: p.tags || [],
                 author: p.author,
+                email: p.email || '',
+                telefone: p.telefone || '',
                 updatedAt: new Date(p.updated_at).toLocaleString('pt-BR'),
                 grade: p.disponibilidade && p.disponibilidade.length > 0 ? p.disponibilidade[0].grade : {}
             }));
@@ -264,7 +278,15 @@
 
             const { data: profData, error: err1 } = await _supabase
                 .from('professores')
-                .insert([{ nome: data.name, titulacao: data.tit, tags: data.tags, author: data.author, updated_at: new Date() }])
+                .insert([{ 
+                    nome: data.name, 
+                    titulacao: data.tit, 
+                    tags: data.tags, 
+                    author: data.author, 
+                    email: data.email, 
+                    telefone: data.phone, 
+                    updated_at: new Date() 
+                }])
                 .select();
 
             if(err1) { alert("Erro ao salvar: " + err1.message); return; }
@@ -290,6 +312,8 @@
             document.getElementById('editId').value = id;
             document.getElementById('profName').value = prof.nome;
             document.getElementById('profTitulacao').value = prof.titulacao;
+            document.getElementById('profEmail').value = prof.email;
+            document.getElementById('profPhone').value = prof.telefone;
             
             currentTags = prof.tags || [];
             renderTags();
@@ -319,7 +343,15 @@
 
             const { error: err1 } = await _supabase
                 .from('professores')
-                .update({ nome: data.name, titulacao: data.tit, tags: data.tags, author: data.author, updated_at: new Date() })
+                .update({ 
+                    nome: data.name, 
+                    titulacao: data.tit, 
+                    tags: data.tags, 
+                    author: data.author, 
+                    email: data.email, 
+                    telefone: data.phone, 
+                    updated_at: new Date() 
+                })
                 .eq('id', id);
 
             if(err1) { alert("Erro ao atualizar"); return; }
@@ -347,6 +379,9 @@
         function collectFormData() {
             const name = document.getElementById('profName').value.trim();
             const tit = document.getElementById('profTitulacao').value;
+            const email = document.getElementById('profEmail').value.trim();
+            const phone = document.getElementById('profPhone').value.trim();
+            
             if(!name) { alert('Nome obrigatório'); return null; }
 
             const schedule = {};
@@ -358,12 +393,14 @@
             });
 
             const author = document.getElementById('authorSelect').value;
-            return { name, tit, schedule, tags: [...currentTags], author };
+            return { name, tit, schedule, tags: [...currentTags], author, email, phone };
         }
 
         function resetForm() {
             document.getElementById('editId').value = '';
             document.getElementById('profName').value = '';
+            document.getElementById('profEmail').value = '';
+            document.getElementById('profPhone').value = '';
             document.getElementById('profTitulacao').selectedIndex = 0;
             currentTags = [];
             renderTags();
@@ -378,7 +415,7 @@
             });
         }
 
-        // --- LISTA E EVENTOS DE CLIQUE (CORRIGIDOS) ---
+        // --- LISTA E EVENTOS ---
         function renderList() {
             const list = document.getElementById('professorList');
             if(db.length === 0) {
@@ -393,22 +430,28 @@
                     : '<span class="text-gray-700 text-[10px]">Sem tags</span>';
 
                 const card = document.createElement('div');
-                // Armazena o ID no elemento para capturar no clique
                 card.dataset.id = p.id;
                 card.className = 'prof-card bg-card border border-border rounded-lg p-5 group relative';
                 
                 card.innerHTML = `
-                    <div class="flex justify-between items-start mb-3">
+                    <div class="flex justify-between items-start mb-2">
                         <div>
                             <h3 class="font-semibold text-white group-hover:text-accent transition">${p.nome}</h3>
                             <span class="text-xs text-gray-500 uppercase tracking-wider">${p.titulacao}</span>
                         </div>
                     </div>
-                    <div class="flex flex-wrap gap-1 mb-4 min-h-[24px]">
+                    
+                    <!-- Info de Contato -->
+                    <div class="text-[10px] text-gray-400 mb-2 space-y-1">
+                        ${p.email ? `<div class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>${p.email}</div>` : ''}
+                        ${p.telefone ? `<div class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>${p.telefone}</div>` : ''}
+                    </div>
+
+                    <div class="flex flex-wrap gap-1 mb-3 min-h-[24px]">
                         ${tagsHtml}
                     </div>
                     <div class="border-t border-border pt-3 flex justify-between items-center text-[10px] text-gray-600">
-                        <span>Por: ${p.author || 'N/A'} em ${p.updatedAt || 'N/A'}</span>
+                        <span>Por: ${p.author || 'N/A'}</span>
                         <div class="flex gap-2">
                             <button class="btn-report text-accent hover:underline">Ver Grade</button>
                             <button class="btn-delete text-red-500 hover:underline">Excluir</button>
@@ -418,22 +461,17 @@
                 list.appendChild(card);
             });
 
-            // Adiciona evento de clique único para toda a lista (Delegação)
+            // Delegação de eventos
             list.onclick = (e) => {
                 const card = e.target.closest('.prof-card');
                 if (!card) return;
                 const id = card.dataset.id;
 
-                // Se clicou no botão excluir
                 if (e.target.classList.contains('btn-delete')) {
                     deleteProfessor(id);
-                } 
-                // Se clicou no botão ver grade
-                else if (e.target.classList.contains('btn-report')) {
+                } else if (e.target.classList.contains('btn-report')) {
                     generateIndividualReport(id);
-                } 
-                // Se clicou em qualquer outro lugar do card (Edita)
-                else {
+                } else {
                     editProfessor(id);
                 }
             };
@@ -445,9 +483,10 @@
             
             cards.forEach(card => {
                 const name = card.querySelector('h3').innerText.toLowerCase();
-                const tags = card.querySelector('.flex-wrap').innerText.toLowerCase();
+                // Busca também no email e telefone que estão dentro do card
+                const details = card.innerText.toLowerCase(); 
                 
-                if(name.includes(term) || tags.includes(term)) {
+                if(name.includes(term) || details.includes(term)) {
                     card.style.display = 'block';
                 } else {
                     card.style.display = 'none';
@@ -482,6 +521,10 @@
             content.innerHTML = `
                 <h2 class="text-2xl font-bold text-white mb-1">${p.nome}</h2>
                 <p class="text-accent text-sm mb-1">${p.titulacao} | Tags: ${p.tags.join(', ')}</p>
+                <div class="text-gray-400 text-xs mb-4 flex gap-4">
+                    <span>📧 ${p.email || 'Não informado'}</span>
+                    <span>📞 ${p.telefone || 'Não informado'}</span>
+                </div>
                 <p class="text-gray-500 text-xs mb-6">Última atualização: ${p.updatedAt} por ${p.author}</p>
                 <table class="w-full text-xs text-center border-collapse">
                     <thead>
@@ -505,4 +548,3 @@
     </script>
 </body>
 </html>
-
